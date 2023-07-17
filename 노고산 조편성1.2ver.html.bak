@@ -1,0 +1,980 @@
+<!DOCTYPE html>
+<!--
+Created using JS Bin
+http://jsbin.com
+
+Copyright (c) 2023 by anonymous (http://jsbin.com/losamuhubo/1/edit)
+
+Released under the MIT license: http://jsbin.mit-license.org
+-->
+<meta name="robots" content="noindex">
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta id="viewport" content="width=device-width">
+  <title>팀편성 로직</title>
+</head>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<script>
+		function makeGroup(){//조건에 따른 팀편성
+
+			var blankChk = 1;//구역번호와 희망배정인원에 아무것도 적혀있지 않은지 확인하기 위한 변수
+			var chkboxCnt = $('input[type=checkbox]:checked').length;//참여자 총 인원(체크박스에 체크된 인원 총 숫자)
+			var apcnt = 0;//희망배정 총 인원
+			
+			for(var i=1;i<=10;i++){//한쪽만 작성된 칸 존재여부 유효성검사 및 구역명이 기입된 구역명 input태그에 사용함을 표시하기 위해 activeArea 클래스, 방의 필요인원에 activePersonCnt 클래스 부여
+				if($("#area_no_"+i).val().trim()==""&&$("#area_person_"+i).val().trim()!=""){
+					alert("구역을 입력해주세요.");
+					$("#area_no_"+i).focus();
+					return false;
+				}
+				if($("#area_no_"+i).val().trim()!=""&&$("#area_person_"+i).val().trim()==""){
+					alert("인원수를 입력해주세요.");
+					$("#area_person_"+i).focus();
+					return false;			
+				}
+				if($("#area_no_"+i).val().trim()!=""){//사용하는 방에 대한 class들 추가
+					$("#area_no_"+i).addClass("activeArea");//구역명 input태그에 class 추가
+					$("#area_person_"+i).addClass("activePersonCnt");//희망배정인원 input태그에 class 추가
+				}
+				if($("#area_no_"+i).val().trim()==""&&$("#area_person_"+i).val().trim()==""){
+					blankChk++;
+				}
+					apcnt += Number($("#area_person_"+i).val());//희망 배정 인원 for문 돌면서 확인
+			}
+			console.log("참여자 총 인원 : "+chkboxCnt);
+			console.log("희망배정 총 인원 : "+apcnt);
+			if(blankChk == 11){
+				alert("구역번호와 희망배정인원에 아무것도 적혀있지 않습니다");
+				return false;
+			}
+			if($('input[type=checkbox]:checked').length == 0){
+				alert("봉사에 참여한 사람의 체크박스를 눌러주세요.");
+				return false;
+			}
+			if(Number(chkboxCnt!=apcnt)){
+				alert("희망 배정 총 인원과 봉사 참여자 총 인원의 수가 일치하지 않습니다.");
+				return false;
+			}
+			var areaCnt = $(".activeArea").length;//사용되는 구역 갯수
+			console.log("areaCnt : "+areaCnt);
+			console.log($(".activePersonCnt"));
+			if(document.getElementById("remakeChk").value == 1){
+				document.getElementById("areaList").replaceChildren();//자식 노드를 비우기 위해 replaceChildren() 메서드에 매개변수를 전달하지 않음
+				document.getElementById("explainLine").replaceChildren();
+				console.log("자식 노드 삭제 진입 확인");
+			}	
+		
+			$('input[type=checkbox]:checked').each(function(){//체크박스 누른 사람 조건에 따라 class 부여
+				var nodePrt = $(this);//부모노드
+				var nodeIdPrt = nodePrt.attr("id");//부모 for문 노드 id
+				var hasCarPrtYn = nodePrt.attr("carYn");//부모 for문 노드 차량 소유 여부(Yn)
+				var isBroPrtYn = nodePrt.attr("broYn");//부모 for문 노드 남자 여부(Yn)
+				var prtFamillyNum = nodePrt.attr("familyNo");//부모 for문 노드 가족 번호
+				var isAdultPrtYn = nodePrt.attr("majorYn");//부모 for문 노드 성인 여부(Yn)
+				console.log("id : "+nodePrt[0].id);
+
+				console.log($(this).attr("data-name"));//이름
+				
+				if(isAdultPrtYn == "N"){//미성년자 class부여
+					$(this).addClass("minor");
+				}
+				if(hasCarPrtYn == "Y"&&isBroPrtYn == "Y"){
+					//조건 : 남자 && 차 소유
+					//목적 : 차 소유자 class 부여
+					$(this).addClass("brocar");
+				}
+				if(hasCarPrtYn == "Y"&&isBroPrtYn == "N"){
+					//조건 : 여자 && 차 소유
+					//목적 : 차 소유자 class 부여
+					$(this).addClass("siscar");
+				}
+				if(isBroPrtYn=="Y"&&isAdultPrtYn == "Y"){
+					//조건 : 차x 다른 조건 없이 성인 남자
+					//목적 : 남자 class 부여
+					$(this).addClass("bro");
+				}
+				
+
+				//참여한(체크박스가 체크 되어있는) 사람중 가족이 존재할 경우(같은 familyNo가 존재할 경우) 진입시 data-togetfam태그 및 hasFamily class가 부여됨
+				$('input[type=checkbox]:checked').each(function(){
+					var nodeIdChd = $(this).attr("id");//자식 for문 노드 id
+					var hasCarChdYn = $(this).attr("carYn");//자식 for문 노드 차량 소유 여부(Yn)
+					var isBroChdYn = $(this).attr("broYn");//자식 for문 노드 남자 여부(Yn)
+					var chdFamillyNum = $(this).attr("familyNo");//자식 for문 노드 가족 번호
+					var isAdultChdYn = $(this).attr("majorYn");//자식 for문 노드 성인 여부(Yn)
+					
+					console.log(!($(this).data("togetfam")));
+					console.log("노드확인 : "+$(this).data("togetfam"));
+					if(prtFamillyNum == chdFamillyNum&&nodeIdPrt!=nodeIdChd&&nodeIdPrt!=nodeIdChd&&isAdultChdYn == "Y"){
+					//추출 조건 : 가족이며(가족번호가 같음),togetfam data태그가 추가된적없고,본인id와 비교해 아닌 경우(첫 입장시 자신의 id와 비교할 수 있음),성인만
+					//추출 목적 : 같은 가족번호를 가지고있는 가족끼리 DATA태그로 묶음
+						nodePrt.attr("data-togetfam",nodePrt[0].id);
+						$(this).attr("data-togetfam",nodePrt[0].id);
+						if(isAdultPrtYn == "Y"){
+							nodePrt.addClass("hasFamily");
+						}
+						if(isAdultChdYn == "Y"){
+							$(this).addClass("hasFamily");
+						}
+						console.log("부모togetfam : "+nodePrt.data("togetfam"));
+						console.log("자녀togetfam : "+$(this).data("togetfam"));
+					}
+
+				});
+											
+				$(this).addClass("none"); //모든 사람은 none class를 부여받음	
+
+			});
+			
+			var needCarAllCnt = 0; // 총 필요 차량의 개수
+			
+			var needPersonCntArr = []; // 각 구역의 희망 배정 인원 저장할 배열
+			var needCarCntArr = []; // 각 구역의 필요 차량의 개수를 저장할 배열
+			var areaArr = []; // 구역 배열
+			//방배정 시작  //window함수는 사용되지않지만 참고용으로 남겨두었음
+			for(var i=0;i<areaCnt;i++){//구역 갯수만큼 for문 동작하며 팀 생성 및 필요 차량 개수 확인
+
+				var needPersonCnt = $(".activePersonCnt")[i].value;//해당 구역의 희망 배정 인원
+				window['needPersonCnt'+Number(i+1)] = $(".activePersonCnt")[i].value;//각 구역의 희망 배정 인원
+				needPersonCntArr.push($(".activePersonCnt")[i].value);//각 구역의 희망 배정 인원 배열
+				window['area'+Number(i+1)] = new Array();//각 구역의 배열(총 인원수)
+				areaArr.push(areaArr[i] = new Array());
+				console.log($(".activePersonCnt")[i]);
+				console.log("필요 인원 : "+$(".activePersonCnt")[i].value);
+
+				var needCarChk = needPersonCnt/5;//해당 구역의 필요 차량 개수 체크
+				window['needCarCnt'+Number(i+1)] = needPersonCnt%5==0 ? needCarChk : Math.floor(needCarChk)+1; //필요 차량 개수 - 차량당 최대 5명까지 - 5명 초과시마다 차량한대 추가 배정 / (예시)6명 = 차량 2대
+				needCarCntArr.push(needPersonCnt%5==0 ? needCarChk : Math.floor(needCarChk)+1);
+				needCarAllCnt += needPersonCnt%5==0 ? needCarChk : Math.floor(needCarChk)+1;
+		
+			}
+			
+			const areaConfmArr = [typeof area1,typeof area2,typeof area3,typeof area4,typeof area5,typeof area6,typeof area7,typeof area8,typeof area9,typeof area10]; //각 구역의 활성화 학인 배열
+			console.log("needPersonCntArr length : "+needPersonCntArr.length);
+			console.log("areaArr length :"+areaArr.length);
+			console.log("needCarCntArr length : "+needCarCntArr.length);
+			console.log("총 필요 차량 대수 : "+needCarAllCnt);
+			
+			for(var i=0;i<areaArr.length;i++){//각 구역에 차량 소유자 입력 for문
+				var brocar = getRandomInxArr($(".brocar"));//남자 차량 소유자끼리 배열 랜덤으로 섞음
+				var siscar = getRandomInxArr($(".siscar"));//여자 차량 소유자끼리 배열 랜덤으로 섞음
+				var car = [//차량 소유자(남자/여자) ---- 전개연산자로 배열 합침(남자/여자 순서)
+					...brocar,
+					...siscar	
+				];
+				for(var j=0;j<needCarCntArr[i];j++){//차량 소유자 필요한 수 만큼 먼저 각 배열마다 넣음  -  each문 안 쓰고 for문 사용 이유 : for문 안에서 each문이 오류나서..
+					if(typeof car[0] != "undefined"){
+						areaArr[i].push(car[0]);//i번 팀 배열에 차량 소유자 push
+						document.getElementById(car[0].id).setAttribute('class','');//차량 소유자가 가지고 있는 모든 class 삭제
+						car.splice(0,1);//차량 소유자 배열에서 해당 요소 삭제
+					}
+				}
+
+			}
+
+			for(var a = 0;a<areaConfmArr.length;a++){//
+					console.log(areaConfmArr[a]);
+				if(areaConfmArr[a] == "undefined"){//구역 활성화 확인 후 없다면 종료
+					break;
+				}
+				if(areaConfmArr[a] != "undefined"){//구역이 활성화 되어있다면
+
+					if(typeof car != "undefined"){//차량 소유자가 남아있다면 차량 소유자 팀배정
+						console.log("needCarCntArr[a] : "+needCarCntArr[a]);
+						
+						$.each(areaArr[a],function(){//현재 구역 배열 요소에 들어있는 사람(현재 차량 소유자뿐)의 가족을 찾기위한 공정
+							var nodePrt = $(this);
+							console.log($(this).attr("id"));
+							console.log(typeof $(this).attr("data-togetfam"));
+							console.log($(".hasFamily"));
+							console.log("차 선택 후 가족 전 인원체크 : "+Number(needPersonCntArr[a]-areaArr[a].length));
+							if(typeof nodePrt.attr("data-togetfam") != "undefined"){//가족 태그가 생성된 사람만 아래 each문 실행
+								$(".hasFamily").each(function(){
+								var nodeChd = $(this);
+									if(nodePrt.attr("data-togetfam") == nodeChd.attr("data-togetfam")){//차량소유자와 data-togetfam(가족태그)가 같다면
+										if(Number(needPersonCntArr[a]-areaArr[a].length > 0)){//팀에 필요한 인원 - 현재 들어가 있는 인원 > 0
+											areaArr[a].push(nodeChd); // 배열에 jquery 객체 자체를 넣음
+											$(this).attr("class",""); // 가진 class 전부제거
+										}else{
+											$(this).removeAttr("data-togetfam");//여기서 선택 못 받은 요소들은 후에 data-togetfam태그로 컨트롤하기때문에 요소 삭제해줌
+										}
+										console.log($(this));
+									}
+								})
+							}
+						})
+					}
+						console.log("bro 진입 전 cnt 체크 : "+Number(needPersonCntArr[a]-areaArr[a].length));
+						console.log("bro 진입 전 undefind 체크 : "+typeof $(".bro")[0] != "undefined");
+						console.log(Number(needPersonCntArr[a]-areaArr[a].length) > 0);
+
+
+						if(Number(needPersonCntArr[a]-areaArr[a].length) > 0&&typeof $(".bro")[0] != "undefined"){//남은 필요 인원보다 많고 .bro class에 사람이 존재할 때
+							console.log("------bro 진입------");
+							console.log("bro진입 id는 ? : "+$(".bro")[0].getAttribute("id"));
+
+							areaArr[a].push($(".bro")[0]);// bro 요소 1개 배열 넣음
+							var prtTogetfam = $(".bro")[0].getAttribute("data-togetfam");
+							var prtId = $(".bro")[0].getAttribute("id");
+							if(typeof $(".bro")[0].getAttribute("data-togetfam") != "undefined"){//남자 가족 넣기
+								$(".hasFamily").each(function(){//가족 존재 class 배열
+								var nodeChd = $(this);//for문 자녀 요소
+								var chdId = $(this).attr("id");//for문 자녀 요소 id
+									if(prtId !=chdId&&prtTogetfam == nodeChd.attr("data-togetfam")){//bro class의 요소와 같은 data-togetfam태그를 가진 사람이라면
+										if(Number(needPersonCntArr[a]-areaArr[a].length) > 0){//팀에 필요한 인원 - 현재 들어가 있는 인원 > 0
+											areaArr[a].push(nodeChd);// 배열에 jquery 객체 자체를 넣음
+											$(this).attr("class","");// 가지고 있는 class 전부제거	
+										}else{
+											$(this).removeAttr("data-togetfam");//여기서 선택 못 받은 요소들은 후에 data-togetfam태그로 컨트롤하기때문에 요소 삭제해줌
+										}
+									}
+								})
+							}
+							document.getElementById($(".bro")[0].id).setAttribute('class','');//bro class 요소가 가지고 있는 class 모두 제거
+						}
+						console.log("none 진입 전 cnt 체크 : "+Number(needPersonCntArr[a]-areaArr[a].length));
+						console.log("none 진입 전 undefind 체크 : "+typeof $(".none")[0] != "undefined");
+						console.log("needPersonCnt : "+needPersonCnt);
+
+						if(Number(needPersonCntArr[a]-areaArr[a].length) > 0&&typeof $(".none")[0] != "undefined"){//상위 조건에서 뽑히지 않은 모든 사람들을 none class로 컨트롤
+							var ramdomIdx = Math.random() * $(".none").length;
+							var noneArr = getRandomInxArr($(".none"));//none class 랜덤 배열 배치 후 변수 생성
+							
+							$.each(noneArr,function(idx){
+								console.log(noneArr);
+								var needPersonCnt = Number(needPersonCntArr[a]-areaArr[a].length);//a번째 팀의 총 필요 인원의 수 - 이미 배정된 인원의 수 
+								var prtNode = $(this);//for문 부모 요소
+								var prtId = $(this).attr("id");//for문 부모 요소 id
+								var checkIsTogetfam1 = 0;//data-togetfam 체크용 변수1
+								var checkIsTogetfam2 = 0;//data-togetfam 체크용 변수2
+										$.each($(".none"),function(){//data-togetfam태그를 삭제할지 확인하는 each문(아래 로직에서 data-togetfam태그 존재 여부로 노드를 컨트롤하기 때문에 남은 가족이 존재하지 않다면 data-togetfam태그를 삭제함)
+											if(prtId!=$(this).attr("id")&&$(this).attr("data-togetfam")&&$(this).attr("data-togetfam")){
+												//진입 조건 : 자기 자신과 비교하지 않으며,data-togetfam태그(가족태그)가 존재할 때 진입
+													checkIsTogetfam1 += 1;//data-togetfam태그가 있는 조건으로 들어옴 +1
+													console.log(prtNode);
+													console.log($(this));
+												if(prtNode.attr("data-togetfam") != $(this).attr("data-togetfam")){
+													//부모노드(prtNode)는 반복하며 none class배열에 있는 모든 노드의 data-togetfam값이 같은지 비교하는데, 다른 값이 들어있을 경우 +1이 됨(같은 data-togetfam값이 들어있다는 것은 가족이 있다는 것이고 if문에 진입하지 않아 +1을 하지 않음으로 checkIsTogetfam1값과 checkIsTogetfam2이 달라지게 됨)
+													checkIsTogetfam2 += 1;
+												}
+											}
+										})//data-togetfam 삭제할지 판단 each문 종료
+								console.log("checkIsTogetfam1 : "+checkIsTogetfam1);
+								console.log("checkIsTogetfam2 : "+checkIsTogetfam2);
+
+									if(checkIsTogetfam1 == checkIsTogetfam2){//data-togetfam이 존재하지만, 일치하는 data-togetfam의 값이 없을 시 data-togetfam태그 삭제
+										//가족이 존재 했지만 랜덤으로 조합하다보니 더이상 none class에 자신의 가족이 남지 않게된 경우 data-togetfam 태그 삭제
+										prtNode.removeAttr("data-togetfam");
+										console.log("data-togetfam 태그 삭제");
+										console.log(prtNode);
+										if(!prtNode.hasClass("none")){
+											noneArr.splice(idx,1);
+											console.log(prtNode);
+											console.log(prtNode.hasClass("none"));
+											console.log(noneArr);
+										}
+									}else{
+										console.log("가족 발견!");
+									}
+
+									if(needPersonCnt > 1){//필요인원이 2명이상이라면
+										if(!prtNode.attr("data-togetfam")){//none class중 가족없는 사람
+												if(prtNode.hasClass("none")){
+													areaArr[a].push(prtNode);//팀 배열에 추가
+													prtNode.attr("class","");//요소가 가진 모든 class 삭제	
+												}
+												//noneArr.splice(idx,1);//팀 배열에 추가된 요소를 noneArr배열에서 삭제
+
+												console.log(prtNode);
+										}else{
+											$.each($(".hasFamily"),function(){//부모 배열 노드의 가족찾기
+												var chdNode = $(this);//자녀 each문의 node
+												var chdId = $(this).attr("id");
+												if(prtId!=chdId&&prtNode.attr("data-togetfam")&&chdNode.attr("data-togetfam")&&prtNode.attr("data-togetfam") == chdNode.attr("data-togetfam")&&needPersonCnt > 1){//none 클래스 안의 가족 존재 & 필요인원이 1명 이상일시 가족 찾아 팀 배열에 push
+													areaArr[a].push(prtNode);//부모 요소 팀 배열에 push
+													prtNode.attr("class","");//부모 요소(prtNode) class 모두 삭제
+													console.log(prtNode);
+													console.log(noneArr[idx]);
+													areaArr[a].push(chdNode);//자식 요소 팀 배열에 push
+													console.log(noneArr[idx]);
+													chdNode.attr("class","");
+													noneArr = noneArr.filter(function(index,element) { //부모 배열(noneArr)속 노드id가 자녀(chdNode)의 id와 같지 않은 노드로 filter통해 새배열 생성
+														console.log("element : "+element.getAttribute("id"));
+														console.log("chdNode : +"+chdNode.attr("id"));
+														console.log("index : "+index);
+														console.log(element.getAttribute("id") != chdNode.attr("id"));
+														return element.getAttribute("id") != chdNode.attr("id")||element.getAttribute("id") != prtNode.attr("id");
+													});
+													
+													console.log(noneArr);
+													console.log($(prtNode).attr("data-name"));
+													console.log(prtNode.attr("data-togetfam"));
+													
+													console.log($(this).attr("data-name"));
+													console.log(chdNode.attr("data-togetfam"));
+												console.log($(this));
+												
+													needPersonCnt -= 2;//필요인원 2명 마이너스
+													//needPersonCntArr[a] -=2;
+											console.log("needPersonCnt none단 확인1 : "+needPersonCnt);
+											console.log("before idx : "+idx);
+											
+											console.log("after idx : "+idx);
+												}
+											})	
+										}
+									}else if(needPersonCnt == 1){//필요 인원이 1명이라면
+										if(prtNode.hasClass("none")){
+											areaArr[a].push(prtNode)
+											console.log(prtNode);
+											prtNode.attr("class","");
+										} 
+										
+										console.log(prtNode[0]);
+										//noneArr.splice(idx,1);
+										console.log(prtNode);
+										console.log("needPersonCnt none단 확인2 : "+needPersonCnt);
+										console.log(noneArr);
+									}else{
+										console.log("needPersonCnt Last 확인 : "+needPersonCnt);
+									}								
+							})
+						}
+
+							//var index = needPersonCntArr[a];//a번째 팀의 희망 배정 인원의 수 
+							
+							$.each(areaArr[a],function(index){//a번째 팀 배정 배열 요소로 들어있는 각각의 jquery객체를 data-name의 value로 변경
+								console.log("index : "+index);
+								var color = "";
+								if($(this).attr("carYn") == "Y"){
+									areaArr[a].splice(index,1,"<span draggable='true' class='box' style='color:rgb(255, 153, 000);'>"+$(this).attr("data-name")+"</span>");
+								}else if($(this).attr("carYn") == "N"&&$(this).attr("broYn") == "Y"){
+									areaArr[a].splice(index,1,"<span draggable='true' class='box' style='background-color:rgb(75, 137, 220);'>"+$(this).attr("data-name")+"</span>");	
+								}else if($(this).attr("carYn") == "N"&&$(this).attr("broYn") == "N"){
+									areaArr[a].splice(index,1,"<span draggable='true' class='box' style='background-color:rgb(255, 102, 102);'>"+$(this).attr("data-name")+"</span>");	
+								}else{
+									areaArr[a].splice(index,1,"<span draggable='true' class='box'>"+$(this).attr("data-name")+"</span>");
+								}
+
+								
+								//var areaSpan = document.createElement("span");
+								//var areaText = document.createTextNode($(".activeArea")[0].value+" 구역 : ");
+								//areaSpan.appendChild(areaText);
+								//document.body.appendChild(areaSpan);
+
+								//$("#team1").html($(".activeArea")[0].value+" 구역 : ");
+								//$("#team1").html("<span style="'color:'+color+'>'+areaArr[a]+'</span>,');
+							})
+						
+					}
+
+					
+					console.log(areaArr[a]);
+					if(typeof areaConfmArr[a] != "undefined"){//구역이 비어있지 않다면 span태그 생성 후 innerHTML메서드를 통해 구역과 팀 명단 사용자 화면에 표출
+						const newSpanElement = document.createElement('span');
+						newSpanElement.innerHTML = $(".activeArea")[a].value+" 구역 : "+areaArr[a]+"\n<br/><br/><br/>";
+						document.getElementById("areaList").appendChild(newSpanElement);
+						//$("#areaList").html(area1+"<br/>");		
+					}						
+					
+				
+			}
+
+			console.log(area1);
+			console.log("car.length : "+car.length);
+			console.log("needCarAllCnt : "+needCarAllCnt);
+			console.log("남은 차 보유자 : "+Number(needCarAllCnt)-Number(car.length));
+		
+			const spanForExplain = document.createElement('span');
+			spanForExplain.innerHTML = "<span style='color:rgb(255, 153, 000);'>"+"ㅡ"+"</span>"+" 차량 소유자"+"&nbsp"+"<span style='color:rgb(75, 137, 220);'>"+"█"+"</span>"+"남자"+"&nbsp"+"<span style='color:rgb(255, 102, 102);'>"+"█"+"</span>"+"여자"+"<br/><br/>";
+			document.getElementById("explainLine").appendChild(spanForExplain);
+			//var nameArr = name.split(" ");
+			//console.log(nameArr.toString());
+			document.getElementById("remakeChk").value = 1;
+			$("#copyText").css("display","block");
+			$("#resultText").css("display","block");
+			turnOnDrag();
+			return true;
+		}
+
+		function turnOnDrag(){
+			let items = document.querySelectorAll('.box');
+			console.log(items);
+			items.forEach(function(item) {
+			item.addEventListener('dragstart', handleDragStart);
+			item.addEventListener('dragover', handleDragOver);
+			item.addEventListener('dragenter', handleDragEnter);
+			item.addEventListener('dragleave', handleDragLeave);
+			item.addEventListener('dragend', handleDragEnd);
+			item.addEventListener('drop', handleDrop);
+			});	
+		}
+
+		  
+			function handleDragStart(e) {
+				console.log("dragStart");
+				this.style.opacity = '0.4';
+			}
+
+			function handleDragEnd(e) {
+		   	  console.log("dragEnd");
+			  this.style.opacity = '1';
+			  var items = document.querySelectorAll(".box");
+			  items.forEach(function (item) {
+				 item.classList.remove('over');
+			  });
+			}
+			function handleDragOver(e) {
+				if (e.preventDefault) {
+				  e.preventDefault();//링크와 같은 것을 드래그할 경우 해당 링크로 이동하는 브라우저의 기본 동작을 방지
+				}
+				return false;
+		    }
+
+		  function handleDragEnter(e) {
+			this.classList.add('over');
+		  }
+
+		  function handleDragLeave(e) {
+			this.classList.remove('over');
+		  }
+		  
+			function handleDrop(e) {
+			  e.stopPropagation(); // stops the browser from redirecting.
+
+				if (dragSrcEl !== this) {
+					dragSrcEl.innerHTML = this.innerHTML;
+					dragSrcEl.style.backgroundColor = this.style.backgroundColor;
+					dragSrcEl.style.color = this.style.color;
+					this.innerHTML = e.dataTransfer.getData('text/html');
+					this.style.backgroundColor = e.dataTransfer.getData('css/backclr');
+					this.style.color = e.dataTransfer.getData('css/color');
+
+				console.log(this);
+				console.log(dragSrcEl);
+
+
+
+
+				}
+				
+			  return false;
+			}
+
+		function handleDragStart(e) {
+		  this.style.opacity = '0.4';
+
+		  dragSrcEl = this;
+			console.log("handleDragStart에서 this.style")
+			console.log(this);
+		  console.log(this.style);
+		  e.dataTransfer.effectAllowed = 'move';
+		  e.dataTransfer.setData('text/html', this.innerHTML);
+		  e.dataTransfer.setData('css/backclr',this.style.backgroundColor);
+		  e.dataTransfer.setData('css/color',this.style.color);
+		}
+
+		function getRandomInxArr(arr){//배열 섞기
+			console.log(arr);
+			for(var i = arr.length-1;i>0;i--){//인자로 받은 배열의 길이만큼 동작
+				let j = Math.floor(Math.random() * (i + 1));//랜덤 숫자 생성 위해 Math.ramdom함수 사용 (i+1을 함으로 length값 포함)
+				[arr[i],arr[j]] = [arr[j],arr[i]];//i번째,j번째 배열의 값을 서로 바꿈			
+				console.log("j : "+j);
+				console.log("arr[i],arr[j] : "+[arr[i],arr[j]]);
+			}
+			console.log(arr);
+			return arr;//바뀐값 return
+		}
+
+		function APNumberChk(e,node){//팀 구성 필요 인원과 참여자의 숫자 확인
+			var numChk = /\d/;//숫자만 - 유효성 검사
+			var chkboxCnt = $('input[type=checkbox]:checked').length;//참여자의 체크된 체크박스 수
+			var apcnt = 0;//희망배정인원 총 인원수
+			var idNum = Number(node.id.charAt(node.id.length-1));// ID의 끝자리 숫자 예) person_1에서 "1"
+			var person_number_arr = $(".area_person_number");//각 구역의 필요 인원 input태그의 class
+			console.log("e keyCode"+e.keyCode);
+			if(e.keyCode != 13&&e.keyCode != 27&&e.keyCode !=8&&!numChk.test(node.value)){//엔터,esc,backspace 키가 아니라면 작동
+				alert("숫자만 입력 가능합니다."); 
+				node.value = "";//작성된 문자 초기화
+			}
+			console.log($("#area_person_"+(idNum+1)));
+			if(e.keyCode == 13){//엔터키 일 시 다음 input태그로 focus이동
+				$("#area_person_"+(idNum+1)).focus();
+			}
+			person_number_arr.each(function(){
+				apcnt += Number($(this).val());//필요 인원의 모든 숫자 더하기
+			});
+			$("#area_person_cnt").html(apcnt);//필요 인원의 총 숫자를 사용자가 볼 수 있도록 표기
+			if(chkboxCnt == apcnt&&chkboxCnt != 0&&apcnt != 0){//참여자의 체크된 체크박스 수와 총 필요인원의 수가 일치하며, 각각 0이 아닐때
+				$(".cntNum").css("color","green");		//초록색
+				$(".cntNum").css("font-weight","bold");		//글씨 굵음
+			}else{
+				$(".cntNum").css("color","red");		//빨간색
+				$(".cntNum").css("font-weight","normal");	//글씨 보통
+			}
+
+		}
+
+		function chkboxCntChk(node){
+			var chkboxCnt = $('input[type=checkbox]:checked').length;//참여자의 체크된 체크박스 수
+			var apcnt = 0;//희망배정인원 총 인원수
+			$("#all_person_cnt").html(chkboxCnt);//체크박스 누를 때 마다 사용자 화면에서 숫자 올라감
+
+			$(".area_person_number").each(function(){//각 구역의 필요 인원 총 숫자
+				apcnt+=Number($(this).val());
+			});
+			console.log(node);
+			console.log(node.getAttribute("caryn"));
+
+			if(chkboxCnt == apcnt&&chkboxCnt != 0&&apcnt != 0){//참여자의 체크된 체크박스 수와 총 필요인원의 수가 일치하며, 각각 0이 아닐때
+				$(".cntNum").css("color","green");		//초록색
+				$(".cntNum").css("font-weight","bold");		//글씨 굵음				
+			}else{
+				$(".cntNum").css("color","red");		//빨간색		
+				$(".cntNum").css("font-weight","normal");	//글씨 보통
+			}
+		}
+		function areaChk(e,node){////구역 input태그 엔터키 활성화
+		var idNum = Number(node.id.charAt(node.id.length-1));// ID의 끝자리 숫자 예) person_1에서 "1"
+		console.log(node.id.length);
+		console.log(node.id.charAt(8));
+			if(e.keyCode == 13){//keycode가 13일 때 다음 input 태그로 focus
+				$("#area_no_"+(idNum+1)).focus();
+			}
+		}
+		function checkedLine(idx){//한줄 전부 체크 or 체크 해제
+			var groupChk = $('#group'+idx).find("input[type='checkbox']");
+			
+			groupChk.toggleClass("checkedGroup"+idx);//group_+숫자인 id의 하위 모든 checkbox에 checkedGroup이라는 class를 부여/삭제
+			console.log(groupChk.hasClass("checkedGroup"+idx));
+			if(groupChk.hasClass("checkedGroup"+idx)){//checkedGroup class가 존재
+				$(".checkedGroup"+idx).each(function(){//checkedGroup class를 가지고 있는 각각의 요소가 전부 checked 됨
+					//groupChk.prop("checked",true);로 하지 않는 것은 전부 체크는 가능하지만 onclick에 의한 참여자 인원이 올라가지 않아서 each문으로 처리함
+					$(this).prop("checked",true);
+					$(this).click();
+					$(this).click();
+				})
+			}else{
+				groupChk.each(function(){
+					$(this).prop("checked",false);
+					$(this).click();
+					$(this).click();
+				})
+					
+			}
+		}
+
+		function copyClipboard(){//배정된 사람들 클립보드에 복사
+			const text = document.getElementById("areaList").textContent;
+			const textarea = document.createElement('textarea');
+			textarea.textContent = text;
+			document.body.append(textarea);
+			textarea.select();
+			document.execCommand('copy');
+			textarea.remove();
+			console.log(text);
+			alert("클립보드에 복사(Ctrl + C)가 완료되었습니다.\n원하시는 곳에 붙여넣기(Ctrl + V)하여 사용하세요.");
+		}
+
+		function resetChkbox(){//체크된 체크박스 모두 해제
+			var checkedBox = $('input[type="checkbox"]:checked');
+			for(var i=0;i<checkedBox.length;i++){
+				checkedBox[i].checked = false;
+			}
+			$("#all_person_cnt").html(0);
+			$("#all_person_cnt").css({"color":"red","font-weight":"normal"});
+			$("#area_person_cnt").css({"color":"red","font-weight":"normal"});
+		}
+
+		function getRegularMem(memGubun){//특정 일에 정기적으로 참석하는 사람들을 위해 버튼을 클릭할 시 checked 되도록
+			if(memGubun == 1){
+				$('input[thursMem=Y]').each(function(){
+					$(this).click();
+				})
+			}else{
+				$('input[saturMem=Y]').each(function(){
+					$(this).click();
+				})
+			}
+		}
+
+
+
+	    	
+
+		
+</script>
+<body style="background-color:grey;">
+<style>
+
+	.box {
+	  border: 3px solid #666;
+	  background-color: #ddd;
+	  border-radius: .5em;
+	  padding: 2px;
+	  cursor: move;
+	}
+
+	.box.over {
+	  border: 3px dotted #666;
+	}	
+
+    .input-container {
+        display: flex;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+
+    .input-container label {
+        font-weight: bold;
+        margin-right: 10px;
+    }
+
+    .input-container input[type="text"] {
+        padding: 5px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        font-size: 14px;
+    }
+	
+	.checkbox-label {
+        display: flex;
+        align-items: center;
+        margin-bottom: 10px;
+        font-weight: bold;
+    }
+
+    .checkbox-label input[type="checkbox"] {
+        appearance: none;
+        -webkit-appearance: none;
+        width: 16px;
+        height: 16px;
+        border: 1px solid #ccc;
+        border-radius: 3px;
+        margin-right: 5px;
+        cursor: pointer;
+    }
+
+    .checkbox-label input[type="checkbox"]:checked {
+        background-color: #3e64ff;
+        border-color: #3e64ff;
+    }
+
+    .checkbox-label input[type="checkbox"]:checked::before {
+        content: '\2713';
+        display: inline-block;
+        width: 16px;
+        height: 16px;
+        text-align: center;
+        line-height: 16px;
+        color: #fff;
+        font-size: 12px;
+    }
+	
+	.custom-button {
+        display: inline-block;
+        padding: 10px 20px;
+        font-size: 16px;
+        font-weight: bold;
+        text-align: center;
+        text-decoration: none;
+        cursor: pointer;
+        border-radius: 5px;
+        background-color: #3e64ff;
+        color: #fff;
+        border: none;
+        transition: background-color 0.3s ease;
+    }
+
+    .custom-button:hover {
+        background-color: #2b48c9;
+    }
+	
+	.custom-button1 {
+        display: inline-block;
+        padding: 10px 20px;
+        font-size: 16px;
+        font-weight: bold;
+        text-align: center;
+        text-decoration: none;
+        cursor: pointer;
+        border-radius: 50px;
+        background-color: #ff6f61;
+        color: #fff;
+        border: none;
+        box-shadow: 0 3px 6px rgba(0, 0, 0, 0.16);
+        transition: background-color 0.3s ease;
+    }
+
+    .custom-button1:hover {
+        background-color: #ff5648;
+    }
+	
+	.custom-button2 {
+        display: inline-block;
+        padding: 12px 24px;
+        font-size: 16px;
+        font-weight: bold;
+        text-align: center;
+        text-decoration: none;
+        cursor: pointer;
+        border-radius: 4px;
+        background-color: #4caf50;
+        color: #fff;
+        border: none;
+        transition: background-color 0.3s ease;
+    }
+
+    .custom-button2:hover {
+        background-color: #45a04
+	}
+	
+	.group-title {
+        font-size: 18px;
+        font-weight: bold;
+        margin-bottom: 8px;
+    }
+	
+	.logo-wrapper {
+        padding-bottom: 20px;
+    }
+	
+	.logo {
+        font-family: Arial, sans-serif;
+        font-size: 28px;
+        font-weight: bold;
+        color: #333;
+        text-decoration: none;
+        display: inline-block;
+        padding: 8px 16px;
+        background-color: #f4f4f4;
+        border-radius: 4px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+	
+</style>
+   <div class="logo-wrapper">
+    <a href="#" class="logo">봉사짝.com</a>
+  </div>
+
+  <div style="background-color: #99CCFF; padding: 20px; font-weight: bold; text-decoration: underline;">1. 오늘의 구역을 입력하세요.<br></div>
+  <br><br>
+  <div class="input-container">
+	<label for="area_no_1">구역번호:</label>
+    <input type="text" id="area_no_1" class="area_no" onkeyup="areaChk(event,this)"> &nbsp;&nbsp;
+    <label for="area_person_1">희망 배정인원:</label>
+    <input type="text" id="area_person_1" class="area_person_number" onkeyup="APNumberChk(event,this)">
+  </div>
+  <div class="input-container">
+	<label for="area_no_2">구역번호:</label>
+    <input type="text" id="area_no_2" class="area_no" onkeyup="areaChk(event,this)"> &nbsp;&nbsp;
+    <label for="area_person_2">희망 배정인원:</label>
+    <input type="text" id="area_person_2" class="area_person_number" onkeyup="APNumberChk(event,this)">
+  </div>
+  <div class="input-container">
+	<label for="area_no_3">구역번호:</label>
+    <input type="text" id="area_no_3" class="area_no" onkeyup="areaChk(event,this)"> &nbsp;&nbsp;
+    <label for="area_person_3">희망 배정인원:</label>
+    <input type="text" id="area_person_3" class="area_person_number" onkeyup="APNumberChk(event,this)">
+  </div>
+  <div class="input-container">
+	<label for="area_no_4">구역번호:</label>
+    <input type="text" id="area_no_4" class="area_no" onkeyup="areaChk(event,this)"> &nbsp;&nbsp;
+    <label for="area_person_4">희망 배정인원:</label>
+    <input type="text" id="area_person_4" class="area_person_number" onkeyup="APNumberChk(event,this)">
+  </div>
+  <div class="input-container">
+	<label for="area_no_5">구역번호:</label>
+    <input type="text" id="area_no_5" class="area_no" onkeyup="areaChk(event,this)"> &nbsp;&nbsp;
+    <label for="area_person_5">희망 배정인원:</label>
+    <input type="text" id="area_person_5" class="area_person_number" onkeyup="APNumberChk(event,this)">
+  </div>
+  <div class="input-container">
+	<label for="area_no_6">구역번호:</label>
+    <input type="text" id="area_no_6" class="area_no" onkeyup="areaChk(event,this)"> &nbsp;&nbsp;
+    <label for="area_person_6">희망 배정인원:</label>
+    <input type="text" id="area_person_6" class="area_person_number" onkeyup="APNumberChk(event,this)">
+  </div>
+  <div class="input-container">
+	<label for="area_no_7">구역번호:</label>
+    <input type="text" id="area_no_7" class="area_no" onkeyup="areaChk(event,this)"> &nbsp;&nbsp;
+    <label for="area_person_7">희망 배정인원:</label>
+    <input type="text" id="area_person_7" class="area_person_number" onkeyup="APNumberChk(event,this)">
+  </div>
+  <div class="input-container">
+	<label for="area_no_8">구역번호:</label>
+    <input type="text" id="area_no_8" class="area_no" onkeyup="areaChk(event,this)"> &nbsp;&nbsp;
+    <label for="area_person_8">희망 배정인원:</label>
+    <input type="text" id="area_person_8" class="area_person_number" onkeyup="APNumberChk(event,this)">
+  </div>
+  <div class="input-container">
+	<label for="area_no_9">구역번호:</label>
+    <input type="text" id="area_no_9" class="area_no" onkeyup="areaChk(event,this)"> &nbsp;&nbsp;
+    <label for="area_person_9">희망 배정인원:</label>
+    <input type="text" id="area_person_9" class="area_person_number" onkeyup="APNumberChk(event,this)">
+  </div>
+  <div class="input-container">
+	<label for="area_no_10">구역번호:</label>
+    <input type="text" id="area_no_10" class="area_no" onkeyup="areaChk(event,this)"> &nbsp;&nbsp;
+    <label for="area_person_10">희망 배정인원:</label>
+    <input type="text" id="area_person_10" class="area_person_number" onkeyup="APNumberChk(event,this)">
+  </div>
+  <br>
+  희망 배정 총 인원 : <span id="area_person_cnt" class="cntNum" style="color:red;">0</span> &nbsp; 봉사 참여자 총 인원 : <span id="all_person_cnt" class="cntNum" style="color:red;">0</span>
+
+<p></p>
+<input type="hidden" id="remakeChk" value=0/>
+  
+  <div style="background-color: #99CCFF; padding: 20px; font-weight: bold; text-decoration: underline;">2. 오늘 봉사에 참여한 분들을 선택하세요. <br></div> 
+  <br><br>
+  <div style="width:80%;display:flex;justify-content:center;">
+	  <input type="button" onclick="resetChkbox()" value="참여자 초기화" class="custom-button1">
+  </div>
+  <div style="display:none;">
+	  <input type="button" value="목요일 주요 멤버 자동체크" onclick="getRegularMem(1)" class="custom-button1">
+	  &nbsp
+	  <input type="button" value="토요일 주요 멤버 자동체크" onclick="getRegularMem(2)" class="custom-button1">
+	  &nbsp
+  </div>
+  <br><br>
+<div style="display: flex; justify-content: space-around;width:80%">
+<div id="group1">
+  <label class="group-title"><a href="javascript:void(0)" onclick="checkedLine(1);"><strong>[1집단]</strong></a><br></label>
+  <label class="checkbox-label"><input type="checkbox" id="person_1" carYn="Y" broYn="Y"  elderYn="Y" familyNo="1" majorYn="Y" onclick="chkboxCntChk(this)" data-name="김대원">김대원</label>
+  <label class="checkbox-label"><input type="checkbox" id="person_2" carYn="N" broYn="N"  elderYn="N" familyNo="1" majorYn="Y" saturMem="Y" onclick="chkboxCntChk(this)" data-name="방진선">방진선</label>
+  <label class="checkbox-label"><input type="checkbox" id="person_3" carYn="Y" broYn="Y"  elderYn="Y" familyNo="2" majorYn="Y" saturMem="Y" onclick="chkboxCntChk(this)" data-name="원유민">원유민<br></label>
+  <label class="checkbox-label"><input type="checkbox" id="person_4" carYn="N" broYn="N"  elderYn="N" familyNo="2" majorYn="Y" saturMem="Y" onclick="chkboxCntChk(this)" data-name="김혜림">김혜림<br></label>
+  <label class="checkbox-label"><input type="checkbox" id="person_5" carYn="N" broYn="Y"  elderYn="Y" familyNo="3" majorYn="Y" saturMem="Y" thursMem="Y" onclick="chkboxCntChk(this)" data-name="김정한">김정한<br></label>
+  <label class="checkbox-label"><input type="checkbox" id="person_6" carYn="N" broYn="N"  elderYn="N" familyNo="3" majorYn="Y" saturMem="Y" thursMem="Y" onclick="chkboxCntChk(this)" data-name="전송자">전송자<br></label>
+  <label class="checkbox-label"><input type="checkbox" id="person_7" carYn="N" broYn="Y"  elderYn="N" familyNo="27" majorYn="Y" saturMem="Y" onclick="chkboxCntChk(this)" data-name="김종환">김종환<br></label>
+  <label class="checkbox-label"><input type="checkbox" id="person_8" carYn="N" broYn="Y"  elderYn="N" familyNo="65" majorYn="Y" onclick="chkboxCntChk(this)" data-name="김태연">김태연<br></label>
+  <label class="checkbox-label"><input type="checkbox" id="person_9" carYn="N" broYn="Y"  elderYn="N" familyNo="4" majorYn="Y" onclick="chkboxCntChk(this)" data-name="이돈강">이돈강<br></label>
+  <label class="checkbox-label"><input type="checkbox" id="person_10" carYn="N" broYn="N"  elderYn="N" familyNo="4" majorYn="Y" onclick="chkboxCntChk(this)" data-name="고정자">고정자<br></label>
+  <label class="checkbox-label"><input type="checkbox" id="person_11" carYn="N" broYn="Y"  elderYn="N" familyNo="5" majorYn="Y" saturMem="Y" onclick="chkboxCntChk(this)" data-name="이창준">이창준<br></label>
+  <label class="checkbox-label"><input type="checkbox" id="person_12" carYn="N" broYn="N"  elderYn="N" familyNo="66" majorYn="Y" saturMem="Y" onclick="chkboxCntChk(this)" data-name="김가현">김가현<br></label>
+  <label class="checkbox-label"><input type="checkbox" id="person_13" carYn="N" broYn="N"  elderYn="N" familyNo="67" majorYn="Y" saturMem="Y" onclick="chkboxCntChk(this)" data-name="김수영">김수영<br></label>
+  <label class="checkbox-label"><input type="checkbox" id="person_14" carYn="N" broYn="N"  elderYn="N" familyNo="68" majorYn="Y" saturMem="Y" onclick="chkboxCntChk(this)" data-name="범강아">범강아<br></label>
+  <label class="checkbox-label"><input type="checkbox" id="person_15" carYn="N" broYn="N"  elderYn="N" familyNo="69" majorYn="Y" saturMem="Y" onclick="chkboxCntChk(this)" data-name="서영우">서영우<br></label>
+  <label class="checkbox-label"><input type="checkbox" id="person_16" carYn="N" broYn="N"  elderYn="N" familyNo="70" majorYn="Y" saturMem="Y" onclick="chkboxCntChk(this)" data-name="신혜인">신혜인<br></label>
+  <label class="checkbox-label"><input type="checkbox" id="person_17" carYn="N" broYn="N"  elderYn="N" familyNo="71" majorYn="Y" saturMem="Y" onclick="chkboxCntChk(this)" data-name="왕해성">왕해성<br></label>
+</div>
+<div id="group2">
+  <label class="group-title"><a href="javascript:void(0)" onclick="checkedLine(2);"><strong>[2집단]</strong></a><br></label>
+  <label class="checkbox-label"><input type="checkbox" id="person_18" carYn="Y" broYn="Y"  elderYn="Y" familyNo="6" majorYn="Y" onclick="chkboxCntChk(this)" data-name="김동민">김동민<br></label>
+  <label class="checkbox-label"><input type="checkbox" id="person_19" carYn="N" broYn="N"  elderYn="N" familyNo="6" majorYn="Y" onclick="chkboxCntChk(this)" data-name="민수진">민수진<br></label>
+  <label class="checkbox-label"><input type="checkbox" id="person_20" carYn="N" broYn="N"  elderYn="N" familyNo="6" majorYn="Y" onclick="chkboxCntChk(this)" data-name="박화심">박화심<br></label>
+  <label class="checkbox-label"><input type="checkbox" id="person_21" carYn="Y" broYn="Y"  elderYn="Y" familyNo="23" majorYn="Y" saturMem="Y" onclick="chkboxCntChk(this)" data-name="염창섭">염창섭<br></label>
+  <label class="checkbox-label"><input type="checkbox" id="person_22" carYn="Y" broYn="Y"  elderYn="N" familyNo="72" majorYn="Y" saturMem="Y" onclick="chkboxCntChk(this)" data-name="변광현">변광현<br></label>
+  <label class="checkbox-label"><input type="checkbox" id="person_23" carYn="Y" broYn="Y"  elderYn="N" familyNo="73" majorYn="Y" saturMem="Y" onclick="chkboxCntChk(this)" data-name="장은상">장은상<br></label>
+  <label class="checkbox-label"><input type="checkbox" id="person_24" carYn="N" broYn="Y"  elderYn="N" familyNo="74" majorYn="Y" saturMem="Y" onclick="chkboxCntChk(this)" data-name="최강현">최강현<br></label>
+  <label class="checkbox-label"><input type="checkbox" id="person_25" carYn="N" broYn="N"  elderYn="N" familyNo="75" majorYn="Y" thursMem="Y" onclick="chkboxCntChk(this)" data-name="김숙희">김숙희<br></label>
+  <label class="checkbox-label"><input type="checkbox" id="person_26" carYn="N" broYn="N"  elderYn="N" familyNo="76" majorYn="Y" thursMem="Y" onclick="chkboxCntChk(this)" data-name="문정순">문정순<br></label>
+  <label class="checkbox-label"><input type="checkbox" id="person_27" carYn="N" broYn="N"  elderYn="N" familyNo="77" majorYn="Y" thursMem="Y" onclick="chkboxCntChk(this)" data-name="안유진">안유진<br></label>
+  <label class="checkbox-label"><input type="checkbox" id="person_28" carYn="N" broYn="N"  elderYn="N" familyNo="78" majorYn="Y" thursMem="Y" onclick="chkboxCntChk(this)" data-name="이명숙B">이명숙B<br></label>
+  <label class="checkbox-label"><input type="checkbox" id="person_29" carYn="N" broYn="N"  elderYn="N" familyNo="79" majorYn="Y" thursMem="Y" onclick="chkboxCntChk(this)" data-name="이봉연">이봉연<br></label>
+  <label class="checkbox-label"><input type="checkbox" id="person_30" carYn="N" broYn="N"  elderYn="N" familyNo="80" majorYn="Y" thursMem="Y" onclick="chkboxCntChk(this)" data-name="이채은">이채은<br></label>
+  <label class="checkbox-label"><input type="checkbox" id="person_31" carYn="N" broYn="N"  elderYn="N" familyNo="81" majorYn="Y" thursMem="Y" onclick="chkboxCntChk(this)" data-name="전소리">전소리<br></label>
+  <label class="checkbox-label"><input type="checkbox" id="person_32" carYn="N" broYn="N"  elderYn="N" familyNo="82" majorYn="Y" thursMem="Y" onclick="chkboxCntChk(this)" data-name="전양분">전양분<br></label>
+
+</div>
+<div id="group3">
+  <label class="group-title"><a href="javascript:void(0)" onclick="checkedLine(3);"><strong>[3집단]</strong></a><br></label>
+  <label class="checkbox-label"><input type="checkbox" id="person_33" carYn="Y" broYn="Y"  elderYn="Y" familyNo="14" majorYn="Y" onclick="chkboxCntChk(this)" data-name="김상훈">김상훈<br></label>
+  <label class="checkbox-label"><input type="checkbox" id="person_34" carYn="N" broYn="N"  elderYn="N" familyNo="14" majorYn="Y" onclick="chkboxCntChk(this)" data-name="김미라">김미라<br></label>
+  <label class="checkbox-label"><input type="checkbox" id="person_35" carYn="N" broYn="N"  elderYn="N" familyNo="14" majorYn="N" onclick="chkboxCntChk(this)" data-name="김온유">김온유<br></label>
+  <label class="checkbox-label"><input type="checkbox" id="person_36" carYn="Y" broYn="Y"  elderYn="Y" familyNo="15" majorYn="Y" saturMem="Y" onclick="chkboxCntChk(this)" data-name="전상훈">전상훈<br></label>
+  <label class="checkbox-label"><input type="checkbox" id="person_37" carYn="N" broYn="N"  elderYn="N" familyNo="15" majorYn="Y" saturMem="Y" onclick="chkboxCntChk(this)" data-name="김수연">김수연<br></label>
+  <label class="checkbox-label"><input type="checkbox" id="person_38" carYn="N" broYn="Y"  elderYn="Y" familyNo="16" majorYn="Y" onclick="chkboxCntChk(this)" data-name="김명수">김명수<br></label>
+  <label class="checkbox-label"><input type="checkbox" id="person_39" carYn="Y" broYn="N"  elderYn="N" familyNo="16" majorYn="Y" onclick="chkboxCntChk(this)" data-name="임혜경">임혜경<br></label>
+  <label class="checkbox-label"><input type="checkbox" id="person_40" carYn="N" broYn="Y"  elderYn="N" familyNo="17" majorYn="Y" saturMem="Y" onclick="chkboxCntChk(this)" data-name="성상남">성상남<br></label>
+  <label class="checkbox-label"><input type="checkbox" id="person_41" carYn="Y" broYn="Y"  elderYn="N" familyNo="18" majorYn="Y" thursMem="Y" onclick="chkboxCntChk(this)" data-name="윤종하">윤종하<br></label>
+  <label class="checkbox-label"><input type="checkbox" id="person_42" carYn="N" broYn="N"  elderYn="N" familyNo="18" majorYn="Y" onclick="chkboxCntChk(this)" data-name="선미임">선미임<br></label>
+  <label class="checkbox-label"><input type="checkbox" id="person_43" carYn="N" broYn="N"  elderYn="N" familyNo="19" majorYn="Y" thursMem="Y" onclick="chkboxCntChk(this)" data-name="김소희">김소희<br></label>
+  <label class="checkbox-label"><input type="checkbox" id="person_44" carYn="N" broYn="N"  elderYn="N" familyNo="83" majorYn="Y" thursMem="Y" onclick="chkboxCntChk(this)" data-name="은다혜">은다혜<br></label>
+  <label class="checkbox-label"><input type="checkbox" id="person_45" carYn="N" broYn="N"  elderYn="N" familyNo="84" majorYn="Y" thursMem="Y" onclick="chkboxCntChk(this)" data-name="이명숙A">이명숙A<br></label>
+  <label class="checkbox-label"><input type="checkbox" id="person_46" carYn="N" broYn="N"  elderYn="N" familyNo="85" majorYn="Y" thursMem="Y" onclick="chkboxCntChk(this)" data-name="이승자">이승자<br></label>
+  <label class="checkbox-label"><input type="checkbox" id="person_47" carYn="N" broYn="N"  elderYn="N" familyNo="20" majorYn="Y" saturMem="Y" onclick="chkboxCntChk(this)" data-name="정미영">정미영<br></label>
+  <label class="checkbox-label"><input type="checkbox" id="person_48" carYn="N" broYn="N"  elderYn="N" familyNo="21" majorYn="N" onclick="chkboxCntChk(this)" data-name="조재령">조재령<br></label>
+  <label class="checkbox-label"><input type="checkbox" id="person_49" carYn="N" broYn="N"  elderYn="N" familyNo="21" majorYn="Y" onclick="chkboxCntChk(this)" data-name="허은희">허은희<br></label>
+</div>
+<div id="group4">
+  <label class="group-title"><a href="javascript:void(0)" onclick="checkedLine(4);"><strong>[4집단]</strong></a><br></label>
+  <label class="checkbox-label"><input type="checkbox" id="person_50" carYn="Y" broYn="Y"  elderYn="Y" familyNo="31" majorYn="Y" onclick="chkboxCntChk(this)" data-name="백현민">백현민<br></label>
+  <label class="checkbox-label"><input type="checkbox" id="person_51" carYn="N" broYn="N"  elderYn="N" familyNo="31" majorYn="Y" onclick="chkboxCntChk(this)" data-name="이수진">이수진<br></label>
+  <label class="checkbox-label"><input type="checkbox" id="person_52" carYn="Y" broYn="Y"  elderYn="Y" familyNo="33" majorYn="Y" onclick="chkboxCntChk(this)" data-name="고광용">고광용<br></label>
+  <label class="checkbox-label"><input type="checkbox" id="person_53" carYn="N" broYn="N"  elderYn="N" familyNo="33" majorYn="Y" onclick="chkboxCntChk(this)" data-name="우혜종">우혜종<br></label>
+  <label class="checkbox-label"><input type="checkbox" id="person_54" carYn="N" broYn="Y"  elderYn="Y" familyNo="34" majorYn="Y" saturMem="Y" onclick="chkboxCntChk(this)" data-name="이철용">이철용<br></label>
+  <label class="checkbox-label"><input type="checkbox" id="person_55" carYn="N" broYn="N"  elderYn="N" familyNo="34" majorYn="Y" saturMem="Y" onclick="chkboxCntChk(this)" data-name="최승희">최승희<br></label>
+  <label class="checkbox-label"><input type="checkbox" id="person_56" carYn="N" broYn="Y"  elderYn="N" familyNo="35" majorYn="N" saturMem="Y" onclick="chkboxCntChk(this)" data-name="전광민">전광민<br></label>
+  <label class="checkbox-label"><input type="checkbox" id="person_57" carYn="N" broYn="Y"  elderYn="N" familyNo="36" majorYn="Y" onclick="chkboxCntChk(this)" data-name="전성현">전성현<br></label>
+  <label class="checkbox-label"><input type="checkbox" id="person_58" carYn="Y" broYn="N"  elderYn="N" familyNo="37" majorYn="Y" onclick="chkboxCntChk(this)" data-name="권수나">권수나<br></label>
+  <label class="checkbox-label"><input type="checkbox" id="person_59" carYn="N" broYn="N"  elderYn="N" familyNo="38" majorYn="Y" onclick="chkboxCntChk(this)" data-name="김명희">김명희<br></label>
+  <label class="checkbox-label"><input type="checkbox" id="person_60" carYn="N" broYn="N"  elderYn="N" familyNo="39" majorYn="Y" saturMem="Y" onclick="chkboxCntChk(this)" data-name="김성임">김성임<br></label>
+  <label class="checkbox-label"><input type="checkbox" id="person_61" carYn="N" broYn="N"  elderYn="N" familyNo="39" majorYn="Y" saturMem="Y" onclick="chkboxCntChk(this)" data-name="김형임">김형임<br></label>
+  <label class="checkbox-label"><input type="checkbox" id="person_62" carYn="N" broYn="N"  elderYn="N" familyNo="40" majorYn="Y" saturMem="Y" onclick="chkboxCntChk(this)" data-name="박영숙">박영숙<br></label>
+  <label class="checkbox-label"><input type="checkbox" id="person_63" carYn="N" broYn="N"  elderYn="N" familyNo="98" majorYn="Y" saturMem="Y" onclick="chkboxCntChk(this)" data-name="신혜지">신혜지<br></label>
+  <label class="checkbox-label"><input type="checkbox" id="person_64" carYn="Y" broYn="N"  elderYn="N" familyNo="99" majorYn="Y" saturMem="Y" onclick="chkboxCntChk(this)" data-name="이유정">이유정<br></label>
+  <label class="checkbox-label"><input type="checkbox" id="person_65" carYn="N" broYn="N"  elderYn="N" familyNo="42" majorYn="Y" saturMem="Y" onclick="chkboxCntChk(this)" data-name="장윤형">장윤형<br></label>
+  <label class="checkbox-label"><input type="checkbox" id="person_66" carYn="N" broYn="N"  elderYn="N" familyNo="86" majorYn="Y" saturMem="Y" onclick="chkboxCntChk(this)" data-name="전선옥">전선옥<br></label>
+  <label class="checkbox-label"><input type="checkbox" id="person_67" carYn="N" broYn="N"  elderYn="N" familyNo="41" majorYn="Y" onclick="chkboxCntChk(this)" data-name="채미영">채미영<br></label>
+</div>
+<div id="group5">
+  <label class="group-title"><a href="javascript:void(0)" onclick="checkedLine(5);"><strong>[5집단]</strong></a><br></label>
+  <label class="checkbox-label"><input type="checkbox" id="person_68" carYn="Y" broYn="Y"  elderYn="Y" familyNo="43" majorYn="Y" onclick="chkboxCntChk(this)" data-name="방신우">방신우<br></label>
+  <label class="checkbox-label"><input type="checkbox" id="person_69" carYn="N" broYn="N"  elderYn="N" familyNo="43" majorYn="Y" onclick="chkboxCntChk(this)" data-name="김명원">김명원<br></label>
+  <label class="checkbox-label"><input type="checkbox" id="person_70" carYn="Y" broYn="Y"  elderYn="N" familyNo="87" majorYn="Y" onclick="chkboxCntChk(this)" data-name="변근만">변근만<br></label>
+  <label class="checkbox-label"><input type="checkbox" id="person_71" carYn="N" broYn="N"  elderYn="N" familyNo="87" majorYn="Y" onclick="chkboxCntChk(this)" data-name="권수정">권수정<br></label>
+  <label class="checkbox-label"><input type="checkbox" id="person_72" carYn="Y" broYn="Y"  elderYn="Y" familyNo="44" majorYn="Y" saturMem="Y" thursMem="Y" onclick="chkboxCntChk(this)" data-name="김민서">김민서<br></label>
+  <label class="checkbox-label"><input type="checkbox" id="person_73" carYn="N" broYn="N"  elderYn="N" familyNo="44" majorYn="Y" saturMem="Y" onclick="chkboxCntChk(this)" data-name="김수현">김수현<br></label>
+  <label class="checkbox-label"><input type="checkbox" id="person_74" carYn="N" broYn="Y"  elderYn="Y" familyNo="45" majorYn="Y" thursMem="Y" onclick="chkboxCntChk(this)" data-name="김형식">김형식<br></label>
+  <label class="checkbox-label"><input type="checkbox" id="person_75" carYn="N" broYn="N"  elderYn="N" familyNo="46" majorYn="Y" onclick="chkboxCntChk(this)" data-name="심재옥">심재옥<br></label>
+  <label class="checkbox-label"><input type="checkbox" id="person_76" carYn="N" broYn="Y"  elderYn="N" familyNo="47" majorYn="N" onclick="chkboxCntChk(this)" data-name="박명훈">박명훈<br></label>
+  <label class="checkbox-label"><input type="checkbox" id="person_77" carYn="N" broYn="N"  elderYn="N" familyNo="49" majorYn="Y" onclick="chkboxCntChk(this)" data-name="김상율">김상율<br></label>
+  <label class="checkbox-label"><input type="checkbox" id="person_78" carYn="N" broYn="N"  elderYn="N" familyNo="50" majorYn="Y" onclick="chkboxCntChk(this)" data-name="김영란">김영란<br></label>
+  <label class="checkbox-label"><input type="checkbox" id="person_79" carYn="N" broYn="N"  elderYn="N" familyNo="51" majorYn="Y" onclick="chkboxCntChk(this)" data-name="민병옥">민병옥<br></label>
+  <label class="checkbox-label"><input type="checkbox" id="person_80" carYn="N" broYn="N"  elderYn="N" familyNo="88" majorYn="Y" onclick="chkboxCntChk(this)" data-name="박지혜">박지혜<br></label>
+  <label class="checkbox-label"><input type="checkbox" id="person_81" carYn="N" broYn="N"  elderYn="N" familyNo="89" majorYn="Y" onclick="chkboxCntChk(this)" data-name="이은철">이은철<br></label>
+  <label class="checkbox-label"><input type="checkbox" id="person_82" carYn="N" broYn="N"  elderYn="N" familyNo="90" majorYn="Y" onclick="chkboxCntChk(this)" data-name="이효수">이효수<br></label>
+  <label class="checkbox-label"><input type="checkbox" id="person_83" carYn="N" broYn="N"  elderYn="N" familyNo="91" majorYn="Y" onclick="chkboxCntChk(this)" data-name="전혜리">전혜리<br></label>
+  <label class="checkbox-label"><input type="checkbox" id="person_84" carYn="N" broYn="N"  elderYn="N" familyNo="92" majorYn="Y" onclick="chkboxCntChk(this)" data-name="황예진">황예진<br></label>
+</div>
+<div id="group6">
+  <label class="group-title"><a href="javascript:void(0)" onclick="checkedLine(6);"><strong>[6집단]</strong></a><br></label>
+  <label class="checkbox-label"><input type="checkbox" id="person_85" carYn="Y" broYn="Y"  elderYn="Y" familyNo="52" majorYn="Y" saturMem="Y" onclick="chkboxCntChk(this)" data-name="이수강">이수강<br></label>
+  <label class="checkbox-label"><input type="checkbox" id="person_86" carYn="N" broYn="N"  elderYn="N" familyNo="52" majorYn="Y" saturMem="Y" onclick="chkboxCntChk(this)" data-name="이현아">이현아<br></label>
+  <label class="checkbox-label"><input type="checkbox" id="person_87" carYn="Y" broYn="Y"  elderYn="Y" familyNo="53" majorYn="Y" onclick="chkboxCntChk(this)" data-name="장문정">장문정<br></label>
+  <label class="checkbox-label"><input type="checkbox" id="person_88" carYn="N" broYn="N"  elderYn="N" familyNo="53" majorYn="Y" onclick="chkboxCntChk(this)" data-name="목지현">목지현<br></label>
+  <label class="checkbox-label"><input type="checkbox" id="person_89" carYn="Y" broYn="Y"  elderYn="N" familyNo="55" majorYn="Y" onclick="chkboxCntChk(this)" data-name="이유훈">이유훈<br></label>
+  <label class="checkbox-label"><input type="checkbox" id="person_90" carYn="N" broYn="Y"  elderYn="N" familyNo="56" majorYn="Y" thursMem="Y" onclick="chkboxCntChk(this)" data-name="최원석">최원석<br></label>
+  <label class="checkbox-label"><input type="checkbox" id="person_91" carYn="N" broYn="Y"  elderYn="N" familyNo="93" majorYn="Y" thursMem="Y" onclick="chkboxCntChk(this)" data-name="홍영일">홍영일<br></label>
+  <label class="checkbox-label"><input type="checkbox" id="person_92" carYn="N" broYn="N"  elderYn="N" familyNo="93" majorYn="Y" thursMem="Y" onclick="chkboxCntChk(this)" data-name="유기정">유기정<br></label>
+  <label class="checkbox-label"><input type="checkbox" id="person_93" carYn="N" broYn="N"  elderYn="N" familyNo="57" majorYn="Y" onclick="chkboxCntChk(this)" data-name="구경자">구경자<br></label>
+  <label class="checkbox-label"><input type="checkbox" id="person_94" carYn="N" broYn="N"  elderYn="N" familyNo="58" majorYn="Y" onclick="chkboxCntChk(this)" data-name="김지율">김지율<br></label>
+  <label class="checkbox-label"><input type="checkbox" id="person_95" carYn="N" broYn="N"  elderYn="N" familyNo="59" majorYn="Y" saturMem="Y" onclick="chkboxCntChk(this)" data-name="서영주">서영주<br></label>
+  <label class="checkbox-label"><input type="checkbox" id="person_96" carYn="N" broYn="N"  elderYn="N" familyNo="60" majorYn="Y" saturMem="Y" onclick="chkboxCntChk(this)" data-name="유연순">유연순<br></label>
+  <label class="checkbox-label"><input type="checkbox" id="person_97" carYn="N" broYn="N"  elderYn="N" familyNo="61" majorYn="Y" saturMem="Y" onclick="chkboxCntChk(this)" data-name="윤경숙">윤경숙<br></label>
+  <label class="checkbox-label"><input type="checkbox" id="person_98" carYn="N" broYn="N"  elderYn="N" familyNo="94" majorYn="Y" saturMem="Y" onclick="chkboxCntChk(this)" data-name="이수인">이수인<br></label>
+  <label class="checkbox-label"><input type="checkbox" id="person_99" carYn="N" broYn="N"  elderYn="N" familyNo="95" majorYn="Y" saturMem="Y" onclick="chkboxCntChk(this)" data-name="전봉순">전봉순<br></label>
+  <label class="checkbox-label"><input type="checkbox" id="person_100" carYn="N" broYn="N"  elderYn="N" familyNo="96" majorYn="Y" saturMem="Y" onclick="chkboxCntChk(this)" data-name="진경남">진경남<br></label>
+  <label class="checkbox-label"><input type="checkbox" id="person_101" carYn="N" broYn="N"  elderYn="N" familyNo="97" majorYn="Y" saturMem="Y" onclick="chkboxCntChk(this)" data-name="최명숙">최명숙<br></label>
+</div>
+</div>
+
+  <p>
+  <br>
+  <input type="button" onClick="makeGroup();" value="봉사짝 만들기" class="custom-button"> <br>
+  <div id="resultText" style="display:none; background-color: #99CCFF; padding: 20px; font-weight: bold; text-decoration: underline;">
+  3. 배정 결과를 확인하세요.<br> 짝 배정을 다시 하고 싶으시면 '봉사짝 만들기' 버튼을 한번 더 누르세요. <br> <span style="color:rgb(219, 68, 85);">팀에 배정된 구성원은 직접 드래그해서 위치를 조정 할 수 있습니다.</span>
+  </div>
+  <br><br>
+  <div id="explainLine"></div>
+	<div id="areaList">
+	</div>
+	<br>
+	<input type="button" id="copyText" style="display:none;" onclick="copyClipboard()" value="클립보드에 복사" class="custom-button2">
+<br>
+</body>
+</html>
