@@ -242,8 +242,9 @@ Released under the MIT license: http://jsbin.mit-license.org
 						if(Number(needPersonCntArr[a]-areaArr[a].length) > 0&&typeof $(".none")[0] != "undefined"){//상위 조건에서 뽑히지 않은 모든 사람들을 none class로 컨트롤
 							var ramdomIdx = Math.random() * $(".none").length;
 							var noneArr = getRandomInxArr($(".none"));//none class 랜덤 배열 배치 후 변수 생성
-
+							
 							$.each(noneArr,function(idx){
+								console.log(noneArr);
 								var needPersonCnt = Number(needPersonCntArr[a]-areaArr[a].length);//a번째 팀의 총 필요 인원의 수 - 이미 배정된 인원의 수 
 								var prtNode = $(this);//for문 부모 요소
 								var prtId = $(this).attr("id");//for문 부모 요소 id
@@ -269,53 +270,77 @@ Released under the MIT license: http://jsbin.mit-license.org
 										prtNode.removeAttr("data-togetfam");
 										console.log("data-togetfam 태그 삭제");
 										console.log(prtNode);
+										if(!prtNode.hasClass("none")){
+											noneArr.splice(idx,1);
+											console.log(prtNode);
+											console.log(prtNode.hasClass("none"));
+											console.log(noneArr);
+										}
 									}else{
 										console.log("가족 발견!");
 									}
 
 									if(needPersonCnt > 1){//필요인원이 2명이상이라면
 										if(!prtNode.attr("data-togetfam")){//none class중 가족없는 사람
-											areaArr[a].push(prtNode);//팀 배열에 추가
-											noneArr.splice[idx,1];//팀 배열에 추가된 요소를 noneArr배열에서 삭제
-											prtNode.attr("class","");//요소가 가진 모든 class 삭제
+												if(prtNode.hasClass("none")){
+													areaArr[a].push(prtNode);//팀 배열에 추가
+													prtNode.attr("class","");//요소가 가진 모든 class 삭제	
+												}
+												//noneArr.splice(idx,1);//팀 배열에 추가된 요소를 noneArr배열에서 삭제
+
+												console.log(prtNode);
 										}else{
-											$.each($(".none"),function(){//부모 배열 노드의 가족찾기
+											$.each($(".hasFamily"),function(){//부모 배열 노드의 가족찾기
 												var chdNode = $(this);//자녀 each문의 node
 												var chdId = $(this).attr("id");
 												if(prtId!=chdId&&prtNode.attr("data-togetfam")&&chdNode.attr("data-togetfam")&&prtNode.attr("data-togetfam") == chdNode.attr("data-togetfam")&&needPersonCnt > 1){//none 클래스 안의 가족 존재 & 필요인원이 1명 이상일시 가족 찾아 팀 배열에 push
 													areaArr[a].push(prtNode);//부모 요소 팀 배열에 push
 													prtNode.attr("class","");//부모 요소(prtNode) class 모두 삭제
-													noneArr.splice[idx,1];//부모 배열(noneArr배열)속 부모 요소(prtNode) 삭제
+													console.log(prtNode);
+													console.log(noneArr[idx]);
 													areaArr[a].push(chdNode);//자식 요소 팀 배열에 push
+													console.log(noneArr[idx]);
+													chdNode.attr("class","");
 													noneArr = noneArr.filter(function(index,element) { //부모 배열(noneArr)속 노드id가 자녀(chdNode)의 id와 같지 않은 노드로 filter통해 새배열 생성
 														console.log("element : "+element.getAttribute("id"));
 														console.log("chdNode : +"+chdNode.attr("id"));
 														console.log("index : "+index);
-														return element.getAttribute("id") != chdNode.attr("id");
+														console.log(element.getAttribute("id") != chdNode.attr("id"));
+														return element.getAttribute("id") != chdNode.attr("id")||element.getAttribute("id") != prtNode.attr("id");
 													});
+													noneArr.splice(idx,1);//부모 배열(noneArr배열)속 부모 요소(prtNode) 삭제
+													//filter뒤에서 부모 요소를 배열에서 삭제하는 이유는 filter보다 먼저 삭제하면 꼬임(왜인지모름)
 													console.log(noneArr);
-													chdNode.attr("class","");
-													
 													console.log($(prtNode).attr("data-name"));
 													console.log(prtNode.attr("data-togetfam"));
 													
 													console.log($(this).attr("data-name"));
 													console.log(chdNode.attr("data-togetfam"));
 												console.log($(this));
+												
 													needPersonCnt -= 2;//필요인원 2명 마이너스
 													//needPersonCntArr[a] -=2;
 											console.log("needPersonCnt none단 확인1 : "+needPersonCnt);
+											console.log("before idx : "+idx);
+											
+											console.log("after idx : "+idx);
 												}
 											})	
 										}
 									}else if(needPersonCnt == 1){//필요 인원이 1명이라면
-										areaArr[a].push(prtNode);
-										noneArr.splice[idx,1];
-										prtNode.attr("class","");
+										if(prtNode.hasClass("none")){
+											areaArr[a].push(prtNode)
+											console.log(prtNode);
+											prtNode.attr("class","");
+										} 
+										
+										console.log(prtNode[0]);
+										//noneArr.splice(idx,1);
+										console.log(prtNode);
 										console.log("needPersonCnt none단 확인2 : "+needPersonCnt);
+										console.log(noneArr);
 									}else{
 										console.log("needPersonCnt Last 확인 : "+needPersonCnt);
-										return false;
 									}								
 							})
 						}
@@ -376,7 +401,7 @@ Released under the MIT license: http://jsbin.mit-license.org
 			return true;
 		}
 
-		function turnOnDrag(){
+		function turnOnDrag(){//드래그 앤 드롭
 			let items = document.querySelectorAll('.box');
 			console.log(items);
 			items.forEach(function(item) {
@@ -883,7 +908,7 @@ Released under the MIT license: http://jsbin.mit-license.org
   <label class="checkbox-label"><input type="checkbox" id="person_52" carYn="Y" broYn="Y"  elderYn="Y" familyNo="33" majorYn="Y" onclick="chkboxCntChk(this)" data-name="고광용">고광용<br></label>
   <label class="checkbox-label"><input type="checkbox" id="person_53" carYn="N" broYn="N"  elderYn="N" familyNo="33" majorYn="Y" onclick="chkboxCntChk(this)" data-name="우혜종">우혜종<br></label>
   <label class="checkbox-label"><input type="checkbox" id="person_54" carYn="N" broYn="Y"  elderYn="Y" familyNo="34" majorYn="Y" saturMem="Y" onclick="chkboxCntChk(this)" data-name="이철용">이철용<br></label>
-  <label class="checkbox-label"><input type="checkbox" id="person_55" carYn="N" broYn="Y"  elderYn="Y" familyNo="34" majorYn="Y" saturMem="Y" onclick="chkboxCntChk(this)" data-name="최승희">최승희<br></label>
+  <label class="checkbox-label"><input type="checkbox" id="person_55" carYn="N" broYn="N"  elderYn="N" familyNo="34" majorYn="Y" saturMem="Y" onclick="chkboxCntChk(this)" data-name="최승희">최승희<br></label>
   <label class="checkbox-label"><input type="checkbox" id="person_56" carYn="N" broYn="Y"  elderYn="N" familyNo="35" majorYn="N" saturMem="Y" onclick="chkboxCntChk(this)" data-name="전광민">전광민<br></label>
   <label class="checkbox-label"><input type="checkbox" id="person_57" carYn="N" broYn="Y"  elderYn="N" familyNo="36" majorYn="Y" onclick="chkboxCntChk(this)" data-name="전성현">전성현<br></label>
   <label class="checkbox-label"><input type="checkbox" id="person_58" carYn="Y" broYn="N"  elderYn="N" familyNo="37" majorYn="Y" onclick="chkboxCntChk(this)" data-name="권수나">권수나<br></label>
@@ -891,8 +916,8 @@ Released under the MIT license: http://jsbin.mit-license.org
   <label class="checkbox-label"><input type="checkbox" id="person_60" carYn="N" broYn="N"  elderYn="N" familyNo="39" majorYn="Y" saturMem="Y" onclick="chkboxCntChk(this)" data-name="김성임">김성임<br></label>
   <label class="checkbox-label"><input type="checkbox" id="person_61" carYn="N" broYn="N"  elderYn="N" familyNo="39" majorYn="Y" saturMem="Y" onclick="chkboxCntChk(this)" data-name="김형임">김형임<br></label>
   <label class="checkbox-label"><input type="checkbox" id="person_62" carYn="N" broYn="N"  elderYn="N" familyNo="40" majorYn="Y" saturMem="Y" onclick="chkboxCntChk(this)" data-name="박영숙">박영숙<br></label>
-  <label class="checkbox-label"><input type="checkbox" id="person_63" carYn="N" broYn="N"  elderYn="N" familyNo="40" majorYn="Y" saturMem="Y" onclick="chkboxCntChk(this)" data-name="신혜지">신혜지<br></label>
-  <label class="checkbox-label"><input type="checkbox" id="person_64" carYn="Y" broYn="N"  elderYn="N" familyNo="41" majorYn="Y" saturMem="Y" onclick="chkboxCntChk(this)" data-name="이유정">이유정<br></label>
+  <label class="checkbox-label"><input type="checkbox" id="person_63" carYn="N" broYn="N"  elderYn="N" familyNo="98" majorYn="Y" saturMem="Y" onclick="chkboxCntChk(this)" data-name="신혜지">신혜지<br></label>
+  <label class="checkbox-label"><input type="checkbox" id="person_64" carYn="Y" broYn="N"  elderYn="N" familyNo="99" majorYn="Y" saturMem="Y" onclick="chkboxCntChk(this)" data-name="이유정">이유정<br></label>
   <label class="checkbox-label"><input type="checkbox" id="person_65" carYn="N" broYn="N"  elderYn="N" familyNo="42" majorYn="Y" saturMem="Y" onclick="chkboxCntChk(this)" data-name="장윤형">장윤형<br></label>
   <label class="checkbox-label"><input type="checkbox" id="person_66" carYn="N" broYn="N"  elderYn="N" familyNo="86" majorYn="Y" saturMem="Y" onclick="chkboxCntChk(this)" data-name="전선옥">전선옥<br></label>
   <label class="checkbox-label"><input type="checkbox" id="person_67" carYn="N" broYn="N"  elderYn="N" familyNo="41" majorYn="Y" onclick="chkboxCntChk(this)" data-name="채미영">채미영<br></label>
